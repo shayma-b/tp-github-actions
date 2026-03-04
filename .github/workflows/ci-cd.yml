@@ -1,0 +1,58 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Récupération du code source
+        uses: actions/checkout@v3
+      
+      - name: Connexion à Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+      - name: Build et push de l'image Backend
+        uses: docker/build-push-action@v4
+        with:
+          context: ./springboot/app
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/tp-backend:latest
+      
+      - name: Build et push de l'image Frontend
+        uses: docker/build-push-action@v4
+        with:
+          context: ./angular-app
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/tp-frontend:latest
+      
+      - name: Test de l'application avec Docker Compose
+        run: |
+          docker-compose up -d
+          sleep 30
+          docker-compose ps
+      
+      - name: Vérification de l'état des conteneurs
+        run: |
+          if [ $(docker-compose ps -q | wc -l) -eq 3 ]; then
+            echo " Tous les conteneurs sont démarrés"
+          else
+            echo " Problème: tous les conteneurs ne sont pas démarrés"
+            docker-compose logs
+            exit 1
+          fi
+      
+      - name: Test rapide de l'API
+        run: |
+          curl -f http://localhost:8081/actuator/health || echo "Health endpoint non trouvé"
+      
+      - name: Nettoyage
+        if: always()
+        run: |
+          docker-compose down
