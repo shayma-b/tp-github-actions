@@ -12,6 +12,12 @@ jobs:
       - name: Récupération du code source
         uses: actions/checkout@v3
       
+      - name: Installer docker-compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose
+          docker-compose --version
+      
       - name: Compiler le backend avec Maven
         run: |
           cd springboot/app
@@ -38,7 +44,7 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/tp-frontend:latest
       
-      - name: Test simple avec Docker Compose
+      - name: Test avec Docker Compose
         run: |
           docker-compose up -d
           sleep 20
