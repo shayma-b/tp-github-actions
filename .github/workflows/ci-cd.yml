@@ -12,6 +12,12 @@ jobs:
       - name: Récupération du code source
         uses: actions/checkout@v3
       
+      - name: Compiler le backend avec Maven
+        run: |
+          cd springboot/app
+          chmod +x mvnw
+          ./mvnw clean package -DskipTests
+      
       - name: Connexion à Docker Hub
         uses: docker/login-action@v2
         with:
@@ -32,18 +38,9 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/tp-frontend:latest
       
-      - name: Test de l'application avec Docker Compose
+      - name: Test simple avec Docker Compose
         run: |
           docker-compose up -d
-          sleep 30
+          sleep 20
           docker-compose ps
-      
-      - name: Vérification que les conteneurs tournent
-        run: |
-          docker-compose ps --services --filter "status=running" | wc -l
-          echo "Vérification terminée"
-      
-      - name: Nettoyage
-        if: always()
-        run: |
           docker-compose down
